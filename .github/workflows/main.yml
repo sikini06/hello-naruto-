@@ -1,0 +1,46 @@
+name: Build Android APK & AAB (Unsigned)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+      
+    # 1. APK Debug (signée avec debug key)
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+      
+    # 2. APK Release UNSIGNED (pas de signature)
+    - name: Build Unsigned Release APK
+      run: ./gradlew assembleRelease -x signReleaseBundle -x signReleaseApk
+      
+    # 3. AAB UNSIGNED (pas de signature)
+    - name: Build Unsigned AAB
+      run: ./gradlew bundleRelease -x signReleaseBundle
+      
+    # Upload des artefacts
+    - name: Upload APKs and AAB
+      uses: actions/upload-artifact@v3
+      with:
+        name: android-builds
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+          app/build/outputs/apk/release/app-release-unsigned.apk
+          app/build/outputs/bundle/release/app-release-unsigned.aab
